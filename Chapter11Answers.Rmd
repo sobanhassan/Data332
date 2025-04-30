@@ -1,0 +1,219 @@
+---
+title: "Chapter11Answers"
+author: "Soban Hassan"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r  results='hide', warning=FALSE, message=FALSE}
+# Prerequisites (Packages & Libraries)
+
+lapply(c("tidyverse", "ggrepel", "ggthemes", "ggplot2", "rlang", "forcats")
+       , library, character.only = TRUE)
+
+
+library(tidyverse)
+library(ggrepel)
+library(ggthemes)
+library(ggplot2)
+library(rlang)
+library(forcats)
+library(scales)   
+```
+
+```{r warning=FALSE}
+## 11.2.1 Exercises
+#1. Create one plot on the fuel economy data with customized title, subtitle, caption, x, y, and color labels.
+data(mpg)
+mpg |>
+  ggplot(aes(x = displ,
+             y = hwy,
+             col = as_factor(class)
+             )
+         ) +
+  geom_point() +
+  labs(title = "Higher displacement vehicles have lower mileage",
+       subtitle = "2-seater sports cars have high mileage despite higher displacements",
+       x = "Engine Displacement (in liters)",
+       y = "Highway Mileage (miles per gallon)",
+       caption = "Data from mpg dataset",
+       color = "Vehicle Class") +
+  theme(legend.position = "right") +
+  scale_color_viridis_d()
+
+#2. Recreate the following plot using the fuel economy data. Note that both the colors and shapes of points vary by type of drive train.
+mpg |>
+  ggplot(aes(x = cty,
+             y = hwy,
+             shape = drv,
+             col = drv)) +
+  geom_point() +
+  labs(x = "City MPG", y = "Highway MPG",
+       col = "Type of \ndrive train",
+       shape = "Type of \ndrive train")
+
+#3. Take an exploratory graphic that you’ve created in the last month, and add informative titles to make it easier for others to understand.
+diamonds |>    
+    mutate(res_lm = (lm(diamonds$y ~ diamonds$x)$residuals)) |>
+    filter(x >= 4) |>
+    mutate(res_lm = res_lm < -1 | res_lm > 1) |>
+    rowid_to_column() |>
+    mutate(rowid = ifelse(res_lm, rowid, NA)) |>
+    ggplot(aes(x = x, 
+               y = y,
+               label = scales::comma(rowid))) +   
+    geom_point(alpha = 0.2) +
+    coord_cartesian(xlim = c(4, 11), ylim = c(4, 11)) +
+    ggrepel::geom_text_repel(size = 3) +
+    labs(x = "Length of diamond, in mm (x)", 
+         y = "Width of diamond, in mm (y)",
+         title = "Certain diamonds have an abnormal shape",
+         subtitle = "The labelled diamonds, with their IDs shown, have excessive length or width",
+         caption = "Data from diamonds data-set, ggplot2") +
+  theme_light()
+
+## 11.3.1 Exercises
+#1. Use geom_text() with infinite positions to place text at the four corners of the plot.
+data_label <- tibble(x = c(Inf, -Inf), 
+       hjust = c("right", "left"), 
+       y = c(Inf, -Inf),
+       vjust = c("top", "bottom")) %>% 
+  expand(nesting(x, hjust), nesting(y, vjust)) %>% 
+  mutate(label = glue::glue("hjust: {hjust}; vjust: {vjust}"))
+
+mpg %>% 
+  ggplot(aes(x = hwy, displ))+
+  geom_count(aes(colour = class))+
+  labs(title = "Larger displacement has lower gas mileage efficiency",
+       subtitle = "SUV and pickup classes` tend to be highest on disp",
+       caption = "Data is for cars made in either 1999 or 2008",
+       colour = "Car class")+
+  geom_text(aes(x = x, y = y, label = label, hjust = hjust, vjust = vjust),
+            data = data_label)
+
+#2. Use annotate() to add a point geom in the middle of your last plot without having to create a tibble. Customize the shape, size, or color of the point.
+
+mpg %>% 
+  ggplot(aes(x = hwy, displ))+
+  geom_count(aes(colour = class))+
+  labs(title = "Larger displacement has lower gas mileage efficiency",
+       subtitle = "SUV and pickup classes` tend to be highest on disp",
+       caption = "Data is for cars made in either 1999 or 2008",
+       colour = "Car class")+
+  annotate("text", x = Inf, y = Inf, label = paste0("Mean highway mpg: ", round(mean(mpg$hwy))), vjust = "top", hjust = "right")
+
+#3. How do labels with geom_text() interact with faceting? How can you add a label to a single facet? How can you put a different label in each facet? (Hint: Think about the dataset that is being passed to geom_text().)
+
+data_label_single <- tibble(x = Inf, y = Inf, label = paste0("Mean highway mpg: ", round(mean(mpg$hwy))))
+
+data_label <- mpg %>% 
+  group_by(class) %>% 
+  summarise(hwy = round(mean(hwy))) %>% 
+  mutate(label = paste0("hwy mpg for ", class, ": ", hwy)) %>% 
+  mutate(x = Inf, y = Inf)
+
+mpg %>% 
+  ggplot(aes(x = hwy, displ))+
+  geom_count(aes(colour = class))+
+  labs(title = "Larger displacement has lower gas mileage efficiency",
+       subtitle = "SUV and pickup classes` tend to be highest on disp",
+       caption = "Data is for cars made in either 1999 or 2008",
+       colour = "Car class")+
+  facet_wrap(~class)+
+  geom_smooth()+
+  geom_text(aes(x = x, y = y, label = label), data = data_label, vjust = "top", hjust = "right")
+
+#4. What arguments to geom_label() control the appearance of the background box?
+
+best_in_class <- mpg %>%
+  group_by(class) %>%
+  filter(row_number(desc(hwy)) == 1)
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  geom_label(aes(label = model), data = best_in_class, nudge_y = 2, alpha = 0.1, fill = "green")
+
+#5. What are the four arguments to arrow()? How do they work? Create a series of plots that demonstrate the most important options.
+
+b <- ggplot(mtcars, aes(wt, mpg)) +
+  geom_point()
+
+df <- data.frame(x1 = 2.62, x2 = 3.57, y1 = 21.0, y2 = 15.0)
+
+b + geom_curve(
+  aes(x = x1, y = y1, xend = x2, yend = y2),
+  data = df,
+  arrow = arrow(length = unit(0.03, "npc"))
+)
+
+## 11.4.6 Exercises
+#1. Why doesn’t the following code override the default scale?
+# geom_hex uses fill, not colour
+df <- tibble(x = rnorm(100), y = rnorm(100))
+
+ggplot(df, aes(x, y)) +
+  geom_hex() +
+  scale_fill_gradient(low = "white", high = "red") +
+  coord_fixed()
+
+#2. What is the first argument to every scale? How does it compare to labs()?
+# name, i.e. what the title will be for that axis/legend/… labs first argument is ... so requires you to name the input
+
+#3. Change the display of the presidential terms by:
+#a. Combining the two variants that customize colors and x axis breaks.
+#b. Improving the display of the y axis.
+#v. Labelling each term with the name of the president.
+#d. Adding informative plot labels.
+#e. Placing breaks every 4 years (this is trickier than it seems!).
+
+presidential %>%
+  mutate(id = 33L + row_number()) %>%
+  ggplot(aes(start, id, colour = party)) +
+  geom_point() +
+  geom_segment(aes(xend = end, yend = id)) +
+  geom_text(aes(label = name), vjust = "bottom", nudge_y = 0.2)+
+  scale_colour_manual(values = c(Republican = "red", Democratic = "blue"))+
+  scale_x_date("Year in 20th and 21st century", date_breaks = "4 years", date_labels = "'%y")+
+  # scale_x_date(NULL, breaks = presidential$start, date_labels = "'%y")+
+  scale_y_continuous(breaks = c(36, 39, 42), labels = c("36th", "39th", "42nd"))+
+  labs(y = "President number", x = "Year")
+
+#4. First, create the following plot. Then, modify the code using override.aes to make the legend easier to see.
+
+ggplot(diamonds, aes(x = carat, y = price)) +
+  geom_point(aes(color = cut), alpha = 1/20)
+
+# Use override.aes to make the legend on the following plot easier to see.
+
+diamonds %>% 
+  ggplot(aes(carat, price)) +
+  geom_point(aes(colour = cut), alpha = 1/20)+
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+
+## 11.5.1 Exercises
+#1. Pick a theme offered by the ggthemes package and apply it to the last plot you made.
+
+ggplot(diamonds, aes(x = carat, y = price)) +   
+  geom_point(aes(color = cut), alpha = 1/20) +
+  theme_light() +
+  guides(color = guide_legend(override.aes = list(size = 5,
+                                                  alpha = 0.5))) +
+  ggthemes::theme_wsj()
+
+#2. Make the axis labels of your plot blue and bolded.
+
+ggplot(diamonds, aes(x = carat, y = price)) +   
+  geom_point(aes(color = cut), alpha = 1/20) +
+  theme_light() +
+  guides(color = guide_legend(override.aes = list(size = 5,
+                                                  alpha = 0.5))) +
+  theme(axis.text = element_text(face = "bold",
+                                 color = "blue",
+                                 size = 12)) +
+  theme(legend.position = "bottom")
+```
+

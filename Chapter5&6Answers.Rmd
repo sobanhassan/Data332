@@ -1,0 +1,87 @@
+---
+title: "Chapter5&6Answers"
+author: "Soban Hassan"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r  results='hide', warning=FALSE, message=FALSE}
+# Prerequisites (Packages & Libraries)
+
+lapply(c("tidyverse", "ggrepel", "palmerpenguins", "ggthemes", "ggplot2", "rlang", "forcats")
+       , library, character.only = TRUE)
+
+
+library(tidyverse)
+library(ggrepel)
+library(nycflights13)
+library(ggthemes)
+library(ggplot2)
+library(rlang)
+library(forcats)
+```
+
+```{r warning=FALSE}
+## 5.2.1 Exercises
+#1. For each of the sample tables, describe what each observation and each column represents.
+
+# Each observation in table1, table2, and table3 corresponds to a country.  
+
+# - Table1:  
+#  - country represents the country's name.  
+#  - year indicates the year of data collection.  
+#  - cases denotes the number of people diagnosed with the disease in that year.  
+#  - population represents the total number of people in the country for that year.  
+
+# - Table2:  
+#  - country and year are consistent with table1.  
+#  - type specifies the category of data (either cases or population).  
+#  - count provides the corresponding numerical value based on type.  
+
+# - Table3:  
+#  - country and year match those in table1.  
+#  - rate is the disease rate, calculated as cases divided by population.
+  
+#2. Sketch out the process you’d use to calculate the rate for table2 and table3. You will need to perform four operations:
+
+#a. Extract the number of TB cases per country per year.
+#b. Extract the matching population per country per year.
+#c. Divide cases by population, and multiply by 10000.
+#d. Store back in the appropriate place.
+
+# For table 2:
+table2 |>
+  pivot_wider(
+    names_from = type,
+    values_from = count
+  ) |> 
+  mutate(rate = cases / population * 10000)
+
+# For table 3:
+table3 |>
+  separate_wider_delim(
+    cols = rate, 
+    delim = "/", 
+    names = c("cases", "population"),
+  ) |>
+  mutate(
+    cases = as.numeric(cases),
+    population = as.numeric(population),
+    rate = cases / population * 10000
+  )
+
+## 6.3 Exercises
+# 1. Go to the RStudio Tips Twitter account, https://twitter.com/rstudiotips and find one tip that looks interesting. Practice using it!
+
+# rstudio has a real-time LaTeX equation previewer that can be used to create a math block with $$ in a R Markdown document.
+
+# 2. What other common mistakes will RStudio diagnostics report? Read https://support.posit.co/hc/en-us/articles/205753617-Code-Diagnostics to find out.
+
+# Warn if variable used has no definition in scope 
+# Warn if a symbol is used with no definition in the current, or parent, scope. The diagnostics engine will supply a suggestion if there appears to be a typo in the symbol’s name; that is, if a symbol with a similar name exists in scope as well.
+
+```

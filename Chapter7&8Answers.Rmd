@@ -1,0 +1,89 @@
+---
+title: "Chapter7&8Answers"
+author: "Soban Hassan"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r  results='hide', warning=FALSE, message=FALSE}
+# Prerequisites (Packages & Libraries)
+
+lapply(c("tidyverse", "ggrepel", "palmerpenguins", "ggthemes", "ggplot2", "rlang", "forcats")
+       , library, character.only = TRUE)
+
+
+library(tidyverse)
+library(ggrepel)
+library(nycflights13)
+library(ggthemes)
+library(ggplot2)
+library(rlang)
+library(forcats)
+```
+
+```{r warning=FALSE}
+##7.2.4 Exercises
+#1. What function would you use to read a file where fields were separated with “|”?
+# For reading a file delimited with |, use read_delim() with argument delim = "|".
+
+#2. Apart from file, skip, and comment, what other arguments do read_csv() and read_tsv() have in common?
+# All other arguments are common among the two functions.
+
+#3. What are the most important arguments to read_fwf()?
+# colspecs - A list of tuples that defines the start and end positions of each column..
+
+#4. Sometimes strings in a CSV file contain commas. To prevent them from causing problems, they need to be surrounded by a quoting character, like " or '. By default, read_csv() assumes that the quoting character will be ". To read the following text into a data frame, what argument to read_csv() do you need to specify?
+"x,y\n1,'a,b'"
+
+# We need to specify the 'quote' argument:
+read_csv("x,y\n1,'a,b'", quote = "\'")
+
+#5. Identify what is wrong with each of the following inline CSV files. What happens when you run the code?
+
+#There are only two column headers but three values in each row, so the last two get merged:
+read_csv("a,b\n1,2,3\n4,5,6")
+
+# There are only three column headers, first row is missing a value in the last column so gets an NA there, the second row has four values so the last two get merged:
+read_csv("a,b,c\n1,2\n1,2,3,4")
+
+# No rows are read in:
+read_csv("a,b\n\"1")
+
+# Each column has a numerical and a character value, so the column type is coerced to character:
+read_csv("a,b\n1,2\na,b")
+
+# The delimiter is ; but it’s not specified, therefore this is read in as a single-column data frame with a single observation:
+read_csv("a;b\n1;3")
+
+#6. Practice referring to non-syntactic names in the following data frame by:
+
+annoying <- tibble(
+  `1` = 1:10,
+  `2` = `1` * 2 + rnorm(length(`1`))
+)
+
+#a. Extracting the variable called 1.
+annoying |>
+  select(`1`)
+
+#b. Plotting a scatterplot of 1 vs. 2.
+ggplot(annoying, aes(x = `2`, y = `1`)) +
+  geom_point()
+
+#c. Creating a new column called 3, which is 2 divided by 1.
+annoying |>
+  mutate(`3` = `2` / `1`)
+
+#d. Renaming the columns to one, two, and three.
+annoying |>
+  mutate(`3` = `2` / `1`) |>
+  rename(
+    "one" = `1`,
+    "two" = `2`,
+    "three" = `3`
+  )
+```
