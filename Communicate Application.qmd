@@ -1,0 +1,153 @@
+---
+title: "Communicate Application"
+author: "Soban Hassan"
+format: html
+editor: visual
+---
+
+```{r setup, include=FALSE}
+# Load required libraries
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(DT)
+```
+
+# Introduction
+
+This report analyzes shipment data to answer key business questions using R. The analysis includes cleaning, transforming, and visualizing the data to identify trends and insights in Quarto format.
+
+# Project Plan
+
+## Plan Overview
+
+The goal of this project is to analyze shipment data to understand how delivery time, shipment size, and other factors affect shipping costs and efficiency. The analysis will answer specific business questions about shipment costs, carrier performance, and the relationship between delivery time and cost.
+
+Steps to Complete the Project Import and Clean Data The raw data will be imported into RStudio and cleaned by removing unnecessary columns, handling missing data, and renaming variables for consistency.
+
+Data Transformation and Analysis The cleaned data will be processed using dplyr functions such as mutate, filter, arrange, and group_by. Statistical summaries and visualizations will be created to identify patterns and relationships.
+
+Reporting and Interpretation The results will be presented in the form of tables and visualizations. The key findings will address the business questions and provide actionable insights into shipment costs and efficiency.
+
+```{r}
+# Import data
+file_path <- "C:/git/Data332/Whole Game Raw Data.xlsx"
+data <- read_excel(file_path)
+
+# Preview data
+head(data)
+```
+
+```{r}
+# Remove unnecessary columns
+data <- data %>%
+  select(-`...10`)
+
+# Rename columns for consistency
+data <- data %>%
+  rename(
+    shipment_id = number,
+    length = L,
+    width = `W...3`,
+    height = H,
+    weight = `W...5`,
+    carrier = carier,
+    distance = `dist.`,
+    cost = `($)`,
+    delivery_days = days,
+    diagonal = `longest diagonal`,
+    density = `KG/m^3`,
+    weight_distance = `KG-KM`
+  )
+
+# Handle missing values
+data <- data %>%
+  mutate(cost = replace_na(cost, 0))
+
+# Display cleaned data
+head(data)
+```
+
+```{r}
+# Are shorter Delivery Times actually more expensive?
+shorter_time_cost <- data %>%
+  ggplot(aes(x = delivery_days, y = cost)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Relationship between Delivery Time and Cost")
+
+shorter_time_cost
+```
+
+```{r}
+# How many shipments are completed by each Carrier?
+shipments_per_carrier <- data %>%
+  count(carrier)
+
+shipments_per_carrier
+```
+
+```{r}
+# What is average cost per shipment from each Carrier?
+avg_cost_per_carrier <- data %>%
+  group_by(carrier) %>%
+  summarise(avg_cost = mean(cost, na.rm = TRUE))
+
+avg_cost_per_carrier
+```
+
+```{r}
+# What is cost per KG-KM for all Carriers?
+cost_per_kg_km <- data %>%
+  mutate(cost_per_kg_km = cost / weight_distance) %>%
+  select(carrier, cost_per_kg_km)
+
+cost_per_kg_km
+```
+
+```{r}
+# What is the rank for each Carrier by Cost per KG-KM?
+ranked_carriers <- cost_per_kg_km %>%
+  group_by(carrier) %>%
+  summarise(avg_cost_per_kg_km = mean(cost_per_kg_km, na.rm = TRUE)) %>%
+  arrange(avg_cost_per_kg_km)
+
+ranked_carriers
+```
+
+```{r}
+# How does Longest Diagonal affect Cost?
+diagonal_cost <- data %>%
+  ggplot(aes(x = diagonal, y = cost)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Relationship between Longest Diagonal and Cost")
+
+diagonal_cost
+```
+
+```{r}
+final_data <- data %>%
+  select(
+    shipment_id, length, width, height, weight, carrier, 
+    distance, cost, delivery_days, diagonal, volume, 
+    density, weight_distance
+  )
+
+datatable(
+  final_data,
+  options = list(
+    pageLength = 10,
+    autoWidth = TRUE,
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+    scrollX = TRUE
+  ),
+  rownames = FALSE,
+  class = 'stripe hover cell-border compact'
+)
+```
+
+## Conclusion
+
+This analysis provides insights into shipment costs, carrier performance, and the relationship between delivery times and costs. The visualizations and summary tables clearly show the trends and key takeaways.
